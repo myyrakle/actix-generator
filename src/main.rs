@@ -26,8 +26,9 @@ async fn get_zip() -> Result<ZipArchive<Cursor<Vec<u8>>>, ZipError> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>>{
-    
-    let args:Vec<String> = std::env::args().collect();
+    let mut args = std::env::args();
+    args.next();
+    let args:Vec<String> = args.collect();
 
     let _options: Vec<String> = args.clone().into_iter().filter(|e| e.chars().nth(0).unwrap() == '-').collect();
     let values: Vec<String> = args.into_iter().filter(|e| e.chars().nth(0).unwrap() != '-').collect();
