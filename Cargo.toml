@@ -2,7 +2,16 @@
 name = "actix-generator"
 version = "0.1.0"
 authors = ["myyrakle <sssang97@naver.com>"]
-edition = "2018"
+description = "Actix Web Template Generator" #그냥 설명문
+keywords = ["actix", "axtix-web", "generator", "actix_web"] #검색용 키워드
+edition = "2018" 
+license = "MIT" #라이센스
+include = ["src/*", "Cargo.toml"] #업로드 대상
+exclude = [] #업로드 제외
+readme = "README.md" #crate 페이지의 소개문 파일
+repository = "https://github.com/myyrakle/actix-generator" #레포지토리
+documentation = "https://github.com/myyrakle/actix-generator/blob/master/README.md" #문서 사이트
+homepage = "https://github.com/myyrakle/actix-generator/blob/master/README.md" #홈페이지 사이트
 
 [dependencies]
 reqwest = { version = "0.10", features = ["json"] }
