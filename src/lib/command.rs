@@ -1,5 +1,5 @@
 pub enum Command {
-    nothing,
-    help,
-    basic,
+    Nothing,
+    Help,
+    Basic,
 }

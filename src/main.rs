@@ -7,7 +7,9 @@ use zip::{ZipArchive, result::ZipError};
 
 mod lib;
 use lib::cargo_toml::{CargoToml};
-use lib::constants::{TEMPLATE_URL};
+use lib::constants::{TEMPLATE_URL, HELP_TEXT};
+use lib::command::{Command};
+use lib::options::{HELP_OPTIONS};
 
 // read zip data from template repository url
 async fn get_zip() -> Result<ZipArchive<Cursor<Vec<u8>>>, ZipError> {
@@ -17,7 +19,13 @@ async fn get_zip() -> Result<ZipArchive<Cursor<Vec<u8>>>, ZipError> {
     zip::ZipArchive::new(cursor)
 }
 
-async fn get_templates() ->  Result<HashMap<String, Vec<(String, Option<Vec<u8>>)>>, Box<dyn std::error::Error>> {
+fn edit_cargo_toml(source: String, project_name: String) -> Result<String, Box<dyn std::error::Error>> {
+    let mut cargo_toml:CargoToml = toml::from_str(&source)?;
+    cargo_toml.set_name(project_name);
+    Ok(toml::to_string(&cargo_toml)?)
+}
+
+async fn get_templates(project_name: String) ->  Result<HashMap<String, Vec<(String, Option<Vec<u8>>)>>, Box<dyn std::error::Error>> {
     let mut templates = HashMap::new();
 
     let mut zip = get_zip().await?;
@@ -36,6 +44,15 @@ async fn get_templates() ->  Result<HashMap<String, Vec<(String, Option<Vec<u8>>
 
         let data = if file.is_file() {
             let data: Vec<u8> = file.bytes().filter(|e|e.is_ok()).map(|e|e.unwrap()).collect();
+
+            let data = if path == "Cargo.toml" {
+                let cargo_toml = String::from_utf8(data)?;
+                let cargo_toml = edit_cargo_toml(cargo_toml, project_name.clone())?;
+                let data: Vec<u8> = cargo_toml.bytes().collect();
+                data
+            } else {
+                data
+            };
             Some(data)
         } else {
             None
@@ -97,19 +114,24 @@ fn read_command() -> (Vec<String>, Vec<String>) {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>>{
-    let (_options, values) = read_command();
+    let (options, values) = read_command();
 
-    let project_name = "asdf".to_string();//values[0].clone();
+    let command: Command = match () {
+        _ if values.is_empty() && options.is_empty() => Command::Help,
+        _ if options.iter().any(|e| HELP_OPTIONS.contains(&e.as_str())) => Command::Help,
+        _ if options.is_empty() && values.len() >= 1 => Command::Basic,
+        _ => Command::Nothing,
+    };    
 
-    let templates = get_templates().await?;
-
-    write_template(templates, "basic".into(), project_name.clone()).await?;
-    // let cargo_toml_path = [project_name.clone(), "Cargo.toml".to_owned()].join("/");
-    // let cargo_toml_text = std::fs::read_to_string(&cargo_toml_path).unwrap();
-    // let mut cargo_toml:CargoToml = toml::from_str(&cargo_toml_text).unwrap();
-    // cargo_toml.set_name(project_name.clone());
-    // println!("{:?}", cargo_toml);
-    // std::fs::write(&cargo_toml_path, toml::to_string(&cargo_toml).unwrap()).unwrap();
+    match command {
+        Command::Help => println!("{}", HELP_TEXT),
+        Command::Basic => {
+            let project_name = values[0].clone();
+            let templates = get_templates(project_name.clone()).await?;
+            write_template(templates, "basic".into(), project_name.clone()).await?;
+        }, 
+        _ => (),
+    }
 
     Ok(())
 }
