@@ -1,6 +1,6 @@
 [package]
 name = "actix-generator"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["myyrakle <sssang97@naver.com>"]
 description = "Actix Web Template Generator" #그냥 설명문
 keywords = ["actix", "axtix-web", "generator", "actix_web"] #검색용 키워드

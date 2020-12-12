@@ -5,37 +5,19 @@ use std::borrow::{ToOwned};
 
 use zip::{ZipArchive, result::ZipError};
 
-mod cargo_struct;
-use cargo_struct::{CargoToml};
+mod lib;
+use lib::cargo_toml::{CargoToml};
+use lib::constants::{TEMPLATE_URL};
 
-//const TEMP_FILE_NAME: &str = "./.__actix_generator_temp.zip";
-
+// read zip data from template repository url
 async fn get_zip() -> Result<ZipArchive<Cursor<Vec<u8>>>, ZipError> {
-    let url = "https://codeload.github.com/myyrakle/actix-templates/zip/main";
-    let bytes: Vec<u8> = reqwest::get(url).await.unwrap().bytes().await.unwrap().into_iter().collect();
+    let bytes: Vec<u8> = reqwest::get(TEMPLATE_URL).await.unwrap().bytes().await.unwrap().into_iter().collect();
     let cursor = Cursor::new(bytes);
     
     zip::ZipArchive::new(cursor)
 }
 
-// async fn create_basic_template(project_name: String) -> Result<(), Box<dyn std::error::Error>> {
-
-// }
-
-
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>>{
-    let mut args = std::env::args();
-    args.next();
-    args.next();
-    let args:Vec<String> = args.collect();
-
-    let _options: Vec<String> = args.clone().into_iter().filter(|e| e.chars().nth(0).unwrap() == '-').collect();
-    let values: Vec<String> = args.into_iter().filter(|e| e.chars().nth(0).unwrap() != '-').collect();
-
-    let project_name = values[0].clone();
-
+async fn get_templates() ->  Result<HashMap<String, Vec<(String, Option<Vec<u8>>)>>, Box<dyn std::error::Error>> {
     let mut templates = HashMap::new();
 
     let mut zip = get_zip().await?;
@@ -74,8 +56,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
         }
     }
 
-    //std::fs::create_dir(&project_name).expect("실패");
-    let basic = templates.get("basic").unwrap().clone();
+    Ok(templates)
+}
+
+async fn write_template(templates: HashMap<String, Vec<(String, Option<Vec<u8>>)>>, template_name: String, project_name: String) -> Result<(), Box<dyn std::error::Error>> {
+    let basic = templates.get(&template_name).unwrap().clone();
 
     for (path, data) in basic.into_iter() {
         //println!("수정 전 경로: {}", path);
@@ -84,19 +69,47 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
 
         //println!("경로: {}", path);
         if data.is_some() {
-            std::fs::write(path, data.unwrap()).expect("실패");
+            std::fs::write(&path, data.unwrap())?;
+            println!(">>>>> {} >>> file created", path);
         } 
         else {
-            std::fs::create_dir(path).expect("실패");
+            std::fs::create_dir(&path)?;
+            println!(">>>>> {} >>> directory created", path);
         }
     }
 
-    let cargo_toml_path = [project_name.clone(), "Cargo.toml".to_owned()].join("/");
-    let cargo_toml_text = std::fs::read_to_string(&cargo_toml_path).unwrap();
-    let mut cargo_toml:CargoToml = toml::from_str(&cargo_toml_text).unwrap();
-    cargo_toml.set_name(project_name.clone());
-    println!("{:?}", cargo_toml);
-    std::fs::write(&cargo_toml_path, toml::to_string(&cargo_toml).unwrap()).unwrap();
+    println!("#### Generation Success ####");
+
+    Ok(())
+}
+
+fn read_command() -> (Vec<String>, Vec<String>) {
+    let mut args = std::env::args();
+    args.next();
+    args.next();
+    let args:Vec<String> = args.collect();
+
+    let options: Vec<String> = args.clone().into_iter().filter(|e| e.chars().nth(0).unwrap() == '-').collect();
+    let values: Vec<String> = args.into_iter().filter(|e| e.chars().nth(0).unwrap() != '-').collect();
+
+    (options, values)
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>>{
+    let (_options, values) = read_command();
+
+    let project_name = "asdf".to_string();//values[0].clone();
+
+    let templates = get_templates().await?;
+
+    write_template(templates, "basic".into(), project_name.clone()).await?;
+    // let cargo_toml_path = [project_name.clone(), "Cargo.toml".to_owned()].join("/");
+    // let cargo_toml_text = std::fs::read_to_string(&cargo_toml_path).unwrap();
+    // let mut cargo_toml:CargoToml = toml::from_str(&cargo_toml_text).unwrap();
+    // cargo_toml.set_name(project_name.clone());
+    // println!("{:?}", cargo_toml);
+    // std::fs::write(&cargo_toml_path, toml::to_string(&cargo_toml).unwrap()).unwrap();
 
     Ok(())
 }
