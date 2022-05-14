@@ -1,6 +1,6 @@
 [package]
 name = "actix-generator"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["myyrakle <sssang97@naver.com>"]
 description = "Actix Web Template Generator" 
 keywords = ["actix", "axtix-web", "generator", "actix_web"] 

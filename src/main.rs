@@ -9,7 +9,7 @@ use lib::TemplateManager;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Args = Args::parse();
 
-    match args.action {
+    match args.command {
         command::SubCommand::New(command) => {
             let project_name = command.project_name;
             let template_name = command.option.template_name.unwrap_or("basic".to_owned());

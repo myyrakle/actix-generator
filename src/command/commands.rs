@@ -2,8 +2,8 @@ use super::{InitCommand, NewCommand};
 
 #[derive(clap::Subcommand, Debug)]
 pub enum SubCommand {
-    /// 생성
+    /// Create new prodject
     New(NewCommand),
-    // 초기화
+    /// Init new project
     Init(InitCommand),
 }
