@@ -1,6 +1,5 @@
 use crate::lib::toml::CargoToml;
 use crate::lib::{TemplateError, TEMPLATE_URL};
-use std::collections::HashMap;
 use std::io::{Cursor, Read};
 
 use std::borrow::ToOwned;
@@ -39,20 +38,20 @@ impl TemplateManager {
     async fn get_template(
         &self,
     ) -> Result<Vec<(String, Option<Vec<u8>>)>, Box<dyn std::error::Error>> {
-        let mut templates = HashMap::new();
-
         let mut zip = Self::get_zip().await?;
 
         let target_template_name = self.template_name.clone();
+        let mut file_list = vec![];
 
         for i in 0..zip.len() {
             let file = zip.by_index(i)?;
 
-            let template_name = file.name().split("/").nth(1).map(ToOwned::to_owned);
+            let template_name = file.name().split("/").nth(2).map(ToOwned::to_owned);
             println!("template_name, {:?}", template_name);
-            let is_template = file.name().split("/").nth(2).is_some();
+            let is_template = file.name().split("/").nth(3).is_some();
 
             let mut split = file.name().split("/");
+            split.next();
             split.next();
             split.next();
             let path: Vec<&str> = split.collect();
@@ -82,17 +81,14 @@ impl TemplateManager {
 
             if is_template {
                 if let Some(template_name) = template_name {
-                    if templates.contains_key(&template_name) == false {
-                        templates.insert(template_name, vec![file_value]);
-                    } else {
-                        let template = templates.get_mut(&template_name).unwrap();
-                        template.push(file_value);
+                    if target_template_name == template_name {
+                        file_list.push(file_value);
                     }
                 }
             }
         }
 
-        Err(TemplateError::boxed("template not found".to_owned()))
+        Ok(file_list)
     }
 
     fn edit_cargo_toml(&self, source: String) -> Result<String, Box<dyn std::error::Error>> {
@@ -101,18 +97,27 @@ impl TemplateManager {
         Ok(toml::to_string(&cargo_toml)?)
     }
 
-    pub async fn new_template(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn new_template(&self, base_path: String) -> Result<(), Box<dyn std::error::Error>> {
         let template = self.get_template().await?;
 
         for (path, data) in template.into_iter() {
-            let path = [self.project_name.clone(), path].join("/");
+            let path = [base_path.clone(), path].join("/");
+            println!("path, {:?}", path);
 
             if data.is_some() {
                 std::fs::write(&path, data.unwrap())?;
                 println!(">>>>> {} >>> file created", path);
             } else {
-                std::fs::create_dir(&path)?;
-                println!(">>>>> {} >>> directory created", path);
+                match std::fs::create_dir(&path) {
+                    Err(error) => {
+                        if error.kind() == std::io::ErrorKind::AlreadyExists {
+                            println!(">>>>> {} >>> directory already exists", path);
+                        } else {
+                            return Err(TemplateError::boxed(error.to_string()));
+                        }
+                    }
+                    Ok(_) => println!(">>>>> {} >>> directory created", path),
+                }
             }
         }
 
