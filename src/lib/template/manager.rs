@@ -47,7 +47,6 @@ impl TemplateManager {
             let file = zip.by_index(i)?;
 
             let template_name = file.name().split("/").nth(2).map(ToOwned::to_owned);
-            println!("template_name, {:?}", template_name);
             let is_template = file.name().split("/").nth(3).is_some();
 
             let mut split = file.name().split("/");
@@ -102,7 +101,6 @@ impl TemplateManager {
 
         for (path, data) in template.into_iter() {
             let path = [base_path.clone(), path].join("/");
-            println!("path, {:?}", path);
 
             if data.is_some() {
                 std::fs::write(&path, data.unwrap())?;
