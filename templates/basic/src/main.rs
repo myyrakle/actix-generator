@@ -1,5 +1,5 @@
 mod middleware;
-mod route;
+mod routes;
 
 use actix_web::{App, HttpServer}; 
 
@@ -14,8 +14,9 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .wrap(middleware::Logger::new())
-            .service(route::index::helloworld)
-            .service(route::index::foobar)
+            .service(routes::index::helloworld)
+            .service(routes::auth::login)
+            .service(routes::user::signup)
             .service(actix_files::Files::new("/static", "static").show_files_listing())
     })
     .bind(address)?
