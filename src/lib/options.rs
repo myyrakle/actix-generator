@@ -1,1 +1,0 @@
-pub const HELP_OPTIONS:[&str; 4] = ["-help", "--help", "-h", "--h"];

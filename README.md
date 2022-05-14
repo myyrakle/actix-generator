@@ -11,5 +11,5 @@ cargo install actix-generator
 If generator is installed, you can create actix project template as follows.
 
 ```
-cargo actix actix_start
+cargo actix new actix_start
 ```
